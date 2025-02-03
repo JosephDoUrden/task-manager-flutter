@@ -10,6 +10,7 @@ class AuthController extends GetxController {
   final Rx<User?> firebaseUser = Rx<User?>(null);
   final Rx<UserModel?> userModel = Rx<UserModel?>(null);
   final RxBool isLoading = false.obs;
+  final RxBool notificationsEnabled = true.obs;
 
   User? get currentUser => firebaseUser.value;
 
@@ -207,5 +208,10 @@ class AuthController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void toggleNotifications(bool value) {
+    notificationsEnabled.value = value;
+    // Implement notification toggle logic
   }
 }
