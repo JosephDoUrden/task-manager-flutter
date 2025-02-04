@@ -17,51 +17,54 @@ class AuthService {
 
   // Get user data from Firestore
   Future<UserModel> getUserData(String uid) async {
+    debugPrint('Fetching user data for uid: $uid');
     try {
-      debugPrint('Fetching user data for uid: $uid');
       final doc = await _firestore.collection('users').doc(uid).get();
-
-      if (!doc.exists) {
-        debugPrint('User document does not exist, creating new user data');
-        final user = _auth.currentUser;
-        if (user == null) throw 'No authenticated user found';
-
-        final userModel = UserModel(
-          uid: uid,
-          email: user.email ?? '',
-          displayName: user.displayName,
-          photoUrl: user.photoURL,
-          createdAt: DateTime.now(),
-          lastLoginAt: DateTime.now(),
-        );
-
-        await _firestore.collection('users').doc(uid).set(userModel.toMap());
-        return userModel;
-      }
-
       debugPrint('User document found, converting to UserModel');
-      return UserModel.fromFirestore(doc);
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        // Ensure we're properly handling the Timestamp conversion
+        if (data['lastLoginAt'] != null) {
+          if (data['lastLoginAt'] is Timestamp) {
+            data['lastLoginAt'] = (data['lastLoginAt'] as Timestamp).toDate();
+          }
+        }
+        if (data['createdAt'] != null) {
+          if (data['createdAt'] is Timestamp) {
+            data['createdAt'] = (data['createdAt'] as Timestamp).toDate();
+          }
+        }
+
+        // Don't modify the photoUrl here, just pass it through
+        return UserModel.fromMap({...data, 'uid': uid});
+      } else {
+        throw 'User document not found';
+      }
     } catch (e) {
-      debugPrint('Error in getUserData: $e');
-      throw _handleAuthError(e);
+      debugPrint('Error fetching user data: $e');
+      rethrow;
     }
   }
 
   // Sign in with email and password
   Future<UserModel> signInWithEmailAndPassword(String email, String password) async {
     try {
-      debugPrint('Attempting to sign in with email: $email');
-      final UserCredential result = await _auth.signInWithEmailAndPassword(
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      final user = result.user!;
-      await _updateUserLastLogin(user.uid);
-      return await getUserData(user.uid);
+      if (userCredential.user != null) {
+        // Update last login time
+        await updateLastLoginTime();
+        return await getUserData(userCredential.user!.uid);
+      } else {
+        throw 'User not found';
+      }
     } catch (e) {
-      debugPrint('Error in signInWithEmailAndPassword: $e');
-      throw _handleAuthError(e);
+      debugPrint('Sign in error: $e');
+      rethrow;
     }
   }
 
@@ -184,22 +187,26 @@ class AuthService {
       final user = _auth.currentUser;
       if (user == null) throw 'No user logged in';
 
-      if (displayName != null) {
-        await user.updateDisplayName(displayName);
-      }
-      if (photoUrl != null) {
-        await user.updatePhotoURL(photoUrl);
-      }
-
-      await _firestore.collection('users').doc(user.uid).update({
-        if (displayName != null) 'displayName': displayName,
-        if (photoUrl != null) 'photoUrl': photoUrl,
+      // Only update Firestore
+      final updates = <String, dynamic>{
         'lastLoginAt': FieldValue.serverTimestamp(),
-      });
+      };
 
+      if (displayName != null) {
+        updates['displayName'] = displayName;
+      }
+
+      // Explicitly set photoUrl field (even if null)
+      updates['photoUrl'] = photoUrl;
+
+      debugPrint('Updating Firestore document');
+      await _firestore.collection('users').doc(user.uid).update(updates);
+
+      // Fetch and return updated user data
       return await getUserData(user.uid);
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error in updateProfile: $e');
+      debugPrint('Stack trace: $stackTrace');
       throw _handleAuthError(e);
     }
   }
@@ -227,5 +234,24 @@ class AuthService {
       }
     }
     return e.toString();
+  }
+
+  Future<void> updateLastLoginTime() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        debugPrint('Updating last login time for user: ${user.uid}');
+        await _firestore.collection('users').doc(user.uid).update({
+          'lastLoginAt': FieldValue.serverTimestamp(),
+        });
+        // Wait a moment for the server timestamp to be set
+        await Future.delayed(const Duration(milliseconds: 500));
+        // Fetch and return updated user data to ensure we have the latest timestamp
+        await getUserData(user.uid);
+      }
+    } catch (e) {
+      debugPrint('Error updating last login time: $e');
+      // Don't throw as this is not critical
+    }
   }
 }

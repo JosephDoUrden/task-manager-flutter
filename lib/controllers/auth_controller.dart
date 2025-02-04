@@ -64,6 +64,11 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       userModel.value = await _authService.signInWithEmailAndPassword(email, password);
+
+      // Update last login time and refresh user model
+      await _authService.updateLastLoginTime();
+      userModel.value = await _authService.getUserData(userModel.value!.uid);
+
       debugPrint('Sign in successful for user: $email');
     } catch (e, stackTrace) {
       debugPrint('Sign in error: $e');
@@ -114,6 +119,10 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       userModel.value = await _authService.signInWithGoogle();
+
+      // Update last login time
+      await _authService.updateLastLoginTime();
+
       debugPrint('Google sign in successful');
     } catch (e, stackTrace) {
       debugPrint('Google sign in error: $e');
@@ -177,32 +186,31 @@ class AuthController extends GetxController {
   }
 
   Future<void> updateProfile({String? displayName, String? photoUrl}) async {
-    debugPrint('Attempting to update user profile');
     try {
+      debugPrint('Attempting to update user profile');
       isLoading.value = true;
+
       userModel.value = await _authService.updateProfile(
         displayName: displayName,
         photoUrl: photoUrl,
       );
-      debugPrint('Profile updated successfully');
+
       Get.snackbar(
         'Success',
         'Profile updated successfully',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green[100],
         colorText: Colors.green[900],
-        duration: const Duration(seconds: 5),
       );
     } catch (e, stackTrace) {
       debugPrint('Profile update error: $e');
       debugPrint('Stack trace: $stackTrace');
       Get.snackbar(
-        'Profile Update Error',
-        e.toString(),
+        'Error',
+        'Failed to update profile: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red[100],
         colorText: Colors.red[900],
-        duration: const Duration(seconds: 5),
       );
       rethrow;
     } finally {
