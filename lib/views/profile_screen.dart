@@ -529,24 +529,166 @@ class ProfileScreen extends StatelessWidget {
   void _showAboutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AboutDialog(
-        applicationName: 'Task Manager',
-        applicationVersion: '1.0.0',
-        applicationIcon: Image.asset(
-          'assets/images/app_icon.png',
-          width: 50,
-          height: 50,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.task_alt_rounded,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Task Manager',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  Text(
+                    'Version 1.0.0',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        children: const [
-          Text(
-            'A modern task management application built with Flutter and Firebase.',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildAboutSection(
+                context,
+                title: 'About',
+                content: 'Task Manager is a powerful and intuitive app designed to help you organize your tasks and boost productivity.',
+              ),
+              const SizedBox(height: 16),
+              _buildAboutSection(
+                context,
+                title: 'Features',
+                content: '''
+• Create and manage tasks with ease
+• Set reminders and due dates
+• Organize tasks with categories
+• Track your progress
+• Cloud sync across devices
+• Dark mode support''',
+              ),
+              const SizedBox(height: 16),
+              _buildAboutSection(
+                context,
+                title: 'Developer',
+                content: 'Developed by Yusufhan Sacak',
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 8,
+                children: [
+                  _buildLinkChip(
+                    context,
+                    icon: Icons.privacy_tip_rounded,
+                    label: 'Privacy Policy',
+                    onTap: () {
+                      // TODO: Open privacy policy
+                    },
+                  ),
+                  _buildLinkChip(
+                    context,
+                    icon: Icons.description_rounded,
+                    label: 'Terms of Service',
+                    onTap: () {
+                      // TODO: Open terms of service
+                    },
+                  ),
+                  _buildLinkChip(
+                    context,
+                    icon: Icons.code_rounded,
+                    label: 'Licenses',
+                    onTap: () {
+                      showLicensePage(
+                        context: context,
+                        applicationName: 'Task Manager',
+                        applicationVersion: '1.0.0',
+                        applicationIcon: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Icon(
+                            Icons.task_alt_rounded,
+                            size: 32,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
-          SizedBox(height: 16),
-          Text(
-            '© 2024 Task Manager. All rights reserved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAboutSection(
+    BuildContext context, {
+    required String title,
+    required String content,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          content,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLinkChip(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return ActionChip(
+      avatar: Icon(
+        icon,
+        size: 18,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      label: Text(label),
+      onPressed: onTap,
     );
   }
 
