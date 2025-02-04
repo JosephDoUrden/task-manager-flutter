@@ -6,7 +6,7 @@ class UserModel {
   final String? displayName;
   final String? photoUrl;
   final DateTime createdAt;
-  final DateTime lastLoginAt;
+  final DateTime? lastLoginAt;
 
   UserModel({
     required this.uid,
@@ -14,36 +14,35 @@ class UserModel {
     this.displayName,
     this.photoUrl,
     required this.createdAt,
-    required this.lastLoginAt,
+    this.lastLoginAt,
   });
 
-  factory UserModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-
-    // Handle timestamps that might be null or missing
-    DateTime getDateTime(dynamic value) {
-      if (value == null) return DateTime.now();
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    DateTime? parseDateTime(dynamic value) {
+      if (value == null) return null;
       if (value is Timestamp) return value.toDate();
-      return DateTime.now();
+      if (value is DateTime) return value;
+      return null;
     }
 
     return UserModel(
-      uid: doc.id,
-      email: data['email'] ?? '',
-      displayName: data['displayName'],
-      photoUrl: data['photoUrl'],
-      createdAt: getDateTime(data['createdAt']),
-      lastLoginAt: getDateTime(data['lastLoginAt']),
+      uid: map['uid'] ?? '',
+      email: map['email'] ?? '',
+      displayName: map['displayName'],
+      photoUrl: map['photoUrl'],
+      createdAt: parseDateTime(map['createdAt']) ?? DateTime.now(),
+      lastLoginAt: parseDateTime(map['lastLoginAt']),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      'uid': uid,
       'email': email,
       'displayName': displayName,
       'photoUrl': photoUrl,
-      'createdAt': FieldValue.serverTimestamp(),
-      'lastLoginAt': FieldValue.serverTimestamp(),
+      'createdAt': createdAt,
+      'lastLoginAt': lastLoginAt,
     };
   }
 

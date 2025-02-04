@@ -43,7 +43,8 @@ dependencies:
   flutter_staggered_animations: ^1.1.1  # For list animations
   permission_handler: ^11.3.0  # For handling permissions
   flutter_native_timezone: ^2.0.0  # For timezone handling
-  
+  image_picker: ^1.0.7
+
   # Firebase dependencies
   firebase_core: ^2.27.1
   firebase_auth: ^4.17.9
